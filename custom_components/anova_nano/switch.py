@@ -40,8 +40,6 @@ class AnovaNanoSwitch(AnovaNanoDescriptionEntity, SwitchEntity):
     ):
         """Initialize the switch."""
         super().__init__(coordinator, description=entity_description)
-        self._attr_name = "Cooking"
-        self._attr_unique_id = "switch"
         self.entity_description = entity_description
         self.coordinator: AnovaNanoDataUpdateCoordinator = coordinator
 
