@@ -24,6 +24,7 @@ def mock_coordinator(hass):
     coordinator.status = AsyncMock()
     coordinator.status.water_temp_units = "C"
     coordinator.timer = 30
+    coordinator.cooking_timer_set = 30
     coordinator.set_timer = AsyncMock()
     coordinator.target_temperature = 60.0
     coordinator.temp_units = UnitOfTemperature.CELSIUS
@@ -121,7 +122,7 @@ def test_entity_descriptions():
     assert timer_description.native_unit_of_measurement == UnitOfTime.MINUTES
     assert timer_description.device_class == NumberDeviceClass.DURATION
     assert timer_description.set_fn == "set_timer"
-    assert timer_description.state_attr == "timer"
+    assert timer_description.state_attr == "cooking_timer_set"
 
     temp_description = ENTITY_DESCRIPTIONS[1]
     assert temp_description.key == "target_temp"

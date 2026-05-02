@@ -37,7 +37,7 @@ ENTITY_DESCRIPTIONS = [
         # Max time settable on device: 99h:55m
         native_max_value=99 * 60 + 55,
         set_fn="set_timer",
-        state_attr="timer",
+        state_attr="cooking_timer_set",
     ),
     AnovaNanoNumberEntityDescription(
         key="target_temp",

@@ -56,6 +56,7 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
         self._temp_units: str | None = None
         self.status: SensorValues | None = None
         self.timer: int | None = None
+        self._cooking_timer_set: int | None = None
         self.target_temperature: float | None = None
 
     async def _connect(self):
@@ -151,6 +152,8 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
                 self._temp_units = await self.client.get_unit()
                 self.status = await self.client.get_sensor_values()
                 self.timer = await self.client.get_timer()
+                if self._cooking_timer_set is None and self.timer is not None:
+                    self._cooking_timer_set = self.timer
                 self.target_temperature = await self.client.get_target_temperature()
             except Exception as err:
                 self.last_update_success = False
@@ -191,6 +194,7 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
             raise UpdateFailed(err) from err
 
         self.timer = minutes
+        self._cooking_timer_set = minutes
 
     async def set_target_temperature(self, temp: float):
         """Set the target temperature."""
@@ -214,3 +218,8 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
             if self._temp_units == "C"
             else UnitOfTemperature.FAHRENHEIT
         )
+
+    @property
+    def cooking_timer_set(self) -> int | None:
+        """The last user-set cooking timer value."""
+        return self._cooking_timer_set

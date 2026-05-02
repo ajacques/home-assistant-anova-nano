@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -23,6 +23,8 @@ from .entity import AnovaNanoDescriptionEntity
 @dataclass(frozen=True)
 class AnovaSensorEntityDescription(SensorEntityDescription):
     """Describes Anova sensor entity."""
+
+    state_attr: str | None = None
 
 
 SENSOR_DESCRIPTIONS: tuple[AnovaSensorEntityDescription, ...] = (
@@ -61,6 +63,15 @@ SENSOR_DESCRIPTIONS: tuple[AnovaSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:fan",
     ),
+    AnovaSensorEntityDescription(
+        key="cooking_timer_remaining",
+        name="cooking timer remaining",
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        icon="mdi:timer-sand",
+        state_attr="timer",
+    ),
 )
 
 
@@ -95,6 +106,8 @@ class AnovaNanoSensor(AnovaNanoDescriptionEntity, SensorEntity):
     def native_value(self) -> str | None:
         """Return the native value of the sensor."""
         try:
+            if self.entity_description.state_attr is not None:
+                return getattr(self.coordinator, self.entity_description.state_attr)
             return getattr(self.coordinator.status, self.entity_description.key)
         except AttributeError:
             # Status is not set yet.

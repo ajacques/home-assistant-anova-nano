@@ -27,6 +27,7 @@ async def test_sensor(hass, bypass_get_data):
         "triac_temperature",
         "internal_temperature",
         "motor_speed",
+        "cooking_timer_remaining",
     ]:
         entity_name = f"sensor.anova_nano_{sensor}"
         state = hass.states.get(entity_name)
