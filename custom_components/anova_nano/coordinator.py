@@ -152,7 +152,7 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
                 self._temp_units = await self.client.get_unit()
                 self.status = await self.client.get_sensor_values()
                 self.timer = await self.client.get_timer()
-                if self._cooking_timer_set is None and self.timer is not None:
+                if self.timer is not None and (self._cooking_timer_set is None or abs(self.time - self.self._cooking_timer_set) > 1):
                     self._cooking_timer_set = self.timer
                 self.target_temperature = await self.client.get_target_temperature()
             except Exception as err:
