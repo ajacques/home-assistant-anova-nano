@@ -151,7 +151,7 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
 
         async with timeout(TIMEOUT):
             try:
-                self._temp_units = await self.client.get_unit()
+                self._temp_unit_update_cooking_timer_sets = await self.client.get_unit()
                 self.status = await self.client.get_sensor_values()
                 new_timer = await self.client.get_timer()
                 if new_timer is not None:
@@ -203,12 +203,15 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
         if self.timer is None:
             return new_timer
 
+        elapsed_seconds = time.monotonic() - self._last_timer_update
+        elapsed_minutes = elapsed_seconds / 60
         if new_timer > self.timer:
+            # Sometimes, when changing the cook time on the device, the next refresh, we see n-1 minutes
+            # Since the Nano only supports increments of 5 minutes, if we see a 4 minute number, we know to round up
+            self.logger.debug("Remote time increase, old=%s,new=%s,delta=%s", self.timer, new_timer, elapsed_minutes)
             return new_timer
 
         if self._last_timer_update is not None:
-            elapsed_seconds = time.monotonic() - self._last_timer_update
-            elapsed_minutes = elapsed_seconds / 60
             expected_max_decrease = max(1, int(elapsed_minutes) + 1)
             if self.timer - new_timer > expected_max_decrease:
                 return new_timer
