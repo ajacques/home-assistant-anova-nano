@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from asyncio import timeout
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -57,6 +58,7 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
         self.status: SensorValues | None = None
         self.timer: int | None = None
         self._cooking_timer_set: int | None = None
+        self._last_timer_update: float | None = None
         self.target_temperature: float | None = None
 
     async def _connect(self):
@@ -151,11 +153,13 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
             try:
                 self._temp_units = await self.client.get_unit()
                 self.status = await self.client.get_sensor_values()
-                self.timer = await self.client.get_timer()
-                # The BTLE protocol doesn't expose the cook time, just the remaining time so we have to infer it.
-                # If it's never been set before, the remaining time is the upper bound
-                if self.timer is not None and (self._cooking_timer_set is None or abs(self.timer - self._cooking_timer_set) > 1):
-                    self._cooking_timer_set = self.timer
+                new_timer = await self.client.get_timer()
+                if new_timer is not None:
+                    self._cooking_timer_set = self._update_cooking_timer_set(
+                        new_timer,
+                    )
+                self.timer = new_timer
+                self._last_timer_update = time.monotonic()
                 self.target_temperature = await self.client.get_target_temperature()
             except Exception as err:
                 self.last_update_success = False
@@ -185,6 +189,31 @@ class AnovaNanoDataUpdateCoordinator(DataUpdateCoordinator[None]):
             await self.client.stop()
         except Exception as err:  # TODO: Narrow down
             raise UpdateFailed(err) from err
+
+    def _update_cooking_timer_set(self, new_timer: int) -> int:
+        """Determine the cooking_timer_set value based on the new timer reading.
+
+        Normally the timer only counts down. If the timer increases or
+        decreases by more than the elapsed time since the last update,
+        the user must have changed it on the device.
+        """
+        if self._cooking_timer_set is None:
+            return new_timer
+
+        if self.timer is None:
+            return new_timer
+
+        if new_timer > self.timer:
+            return new_timer
+
+        if self._last_timer_update is not None:
+            elapsed_seconds = time.monotonic() - self._last_timer_update
+            elapsed_minutes = elapsed_seconds / 60
+            expected_max_decrease = max(1, int(elapsed_minutes) + 1)
+            if self.timer - new_timer > expected_max_decrease:
+                return new_timer
+
+        return self._cooking_timer_set
 
     async def set_timer(self, minutes: int):
         """Set the cooking timer."""
