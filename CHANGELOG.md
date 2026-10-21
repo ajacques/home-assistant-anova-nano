@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Pin `pyanova-nano` to `<0.3.5` to avoid the broken 0.3.5 release. That release ships protobuf gencode 7.35.1, which is incompatible with Home Assistant's pinned `protobuf==6.32.0`, causing the integration to fail to import with a `VersionError`. Pinning to `<0.3.5` keeps the compatible 0.3.3/0.3.4 releases (gencode 6.31.1).
+
 ## [0.8.0] - 2026-04-04
 
 ### Changed
